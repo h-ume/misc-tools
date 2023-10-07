@@ -36,7 +36,7 @@ import subprocess
 import sys
 from typing import NoReturn, Optional
 
-version = "20230922"
+version = "20231007"
 
 
 def warnx(message: str) -> None:
@@ -48,33 +48,32 @@ def errx(val: int, message: str) -> NoReturn:
     sys.exit(val)
 
 
-def diff(oldfile, newfile, ignspcchg, diffopts, ports_format):
-    dopts = ['-u'] + diffopts
+def diff(oldfile: str, newfile: str, ignspcchg: bool, diffopts: list[str],
+         ports_format: bool) -> None:
+    dopts: list[str] = ['-u'] + diffopts
     if ignspcchg:
         dopts.append('-b')
     if ports_format or re.search(r'.+\.(c|cpp|py)$', newfile):
         dopts.append('-p')
     if ports_format:
         dopts.append('-d')
-    command = ['diff'] + dopts + [oldfile, newfile]
-    env = None
+    command: list[str] = ['diff'] + dopts + [oldfile, newfile]
+    env: Optional[os._Environ[str]] = None
     if ports_format:
         env = os.environ
         env['TZ'] = 'UTC'
-    with subprocess.Popen(command, universal_newlines=True, env=env,
-                          stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                          stderr=subprocess.STDOUT, close_fds=True,
-                          encoding=sys.getdefaultencoding()) as proc:
-        if not ports_format:
-            print(f'Index: {newfile}')
-            print(' '.join(command))
-        for line in proc.stdout:
-            if ports_format:
-                if re.match(r'^---', line):
-                    line = re.sub(r'\.\d* \+0000$', ' UTC', line)
-                elif re.match(r'^\+\+\+', line):
-                    line = re.sub(r'(\s+[-0-9:.+]+)+$', '', line)
-            sys.stdout.write(line)
+    response: subprocess.CompletedProcess = subprocess.run(
+        command, env=env, text=True, capture_output=True)
+    if not ports_format:
+        print(f'Index: {newfile}')
+        print(' '.join(command))
+    lines: str = response.stdout
+    if ports_format:
+        lines = re.sub(r'^(---.+)\.[ +\d]+$', r'\1 UTC', lines,
+                       flags=re.MULTILINE)
+        lines = re.sub(r'^(\+\+\+.+?)(\s+[-+.:\d]+){3}$', r'\1', lines,
+                       flags=re.MULTILINE)
+    print(lines, end='')
 
 
 def mkpatch(path: str, suffix: str, ignspcchg: bool, diffopts: list[str],
