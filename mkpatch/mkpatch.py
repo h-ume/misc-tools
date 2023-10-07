@@ -26,7 +26,6 @@
 # SUCH DAMAGE.
 #
 # mkpatch - Make patch
-# $Mahoroba: misc/trunk/mkpatch.py 686 2016-09-28 06:25:27Z ume $
 
 import argparse
 import io
