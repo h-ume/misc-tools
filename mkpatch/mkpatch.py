@@ -126,22 +126,11 @@ def main() -> NoReturn:
                         default=[], help='additional diff options')
     parser.add_argument('-P', '--ports-format', action='store_true',
                         help='produce diff for FreeBSD ports')
-    parser.add_argument('-r', '--read-file', action='store', dest='file',
-                        help='read filenames from diff file')
     parser.add_argument('-s', '--suffix', action='store', dest='suffix',
                         default='.orig',
                         help='suffix of original file (default: %(default)s)')
     parser.add_argument('path', nargs='*', help='path to compare')
     args: argparse.Namespace = parser.parse_args()
-    if args.file:
-        try:
-            for line in open(args.file, 'r'):
-                match_obj: Optional[re.Match] = re.search(
-                    r'^Index:\s(.+)$', line.rstrip())
-                if match_obj:
-                    args.path.append(match_obj.group(1))
-        except Exception as e:
-            errx(1, re.sub(r'^\[Errno \w+]\s+', '', str(e)))
 
     if len(args.path) == 0:
         args.path.append('.')
